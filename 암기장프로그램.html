@@ -73,6 +73,13 @@ textarea{resize:vertical;min-height:90px}
 .chap.sel{border-color:var(--pri);background:var(--pri-soft)}
 .chap .ck{position:absolute;top:12px;right:12px;width:20px;height:20px}
 .chap{position:relative}
+.guide{background:linear-gradient(135deg,#eef4ff,#fff7ec);border:1px solid #dfe6f5}
+.guide h3{margin:0 0 4px;font-size:17px}
+.gsteps{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:12px}
+.gstep{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px}
+.gstep .n{display:inline-flex;width:22px;height:22px;border-radius:50%;background:var(--pri);color:#fff;font-size:12px;font-weight:700;align-items:center;justify-content:center;margin-right:6px}
+.gstep b{font-size:14px}
+.gstep p{margin:6px 0 0;font-size:13px;color:var(--sub);line-height:1.5}
 .editbar{position:sticky;top:58px;z-index:10;background:var(--ink);color:#fff;border-radius:12px;padding:10px 12px;margin:8px 0}
 .editbar .btn{padding:6px 10px;font-size:13px}
 .typebadge{font-size:11px;padding:1px 6px;border-radius:5px;background:#eee;color:var(--sub);white-space:nowrap;margin-top:3px}
@@ -137,6 +144,7 @@ textarea{resize:vertical;min-height:90px}
   <h1 onclick="go('home')">📚 동동이 암기장</h1>
   <span id="admPill" class="pill adm" style="display:none;cursor:pointer" title="눌러서 관리 모드 켜기/끄기" onclick="toggleAdminMode()">관리 모드</span>
   <span id="keyPill" class="pill">AI 채점 꺼짐</span>
+  <button class="icon" title="사용법" onclick="openGuide()">❓</button>
   <button class="icon" title="설정" onclick="openSettings()">⚙️</button>
 </div></header>
 <div class="wrap" id="app"></div>
@@ -290,9 +298,23 @@ function renderHome(){
   return h;
 }
 function chapterAcc(ch){let c=0,w=0;ch.items.forEach(i=>{c+=i.c||0;w+=i.w||0});return c+w?Math.round(c/(c+w)*100):null}
+function guideSteps(){return `<div class="gsteps">
+  <div class="gstep"><span class="n">1</span><b>세트 담기</b><p><b>📚 기본 세트</b>에서 간호조무사·요양보호사·의학용어·영단어 등을 골라 <b>내 챕터</b>에 담아요. 많은 세트는 20개씩 나눠서 골라요.</p></div>
+  <div class="gstep"><span class="n">2</span><b>직접 만들기</b><p><b>+ 챕터 추가</b> 후 직접 입력하거나, 엑셀·한글 파일을 올리거나, <b>빨간 글씨 요점정리</b>를 복사해 붙여넣으면 빨간 부분이 빈칸이 돼요.</p></div>
+  <div class="gstep"><span class="n">3</span><b>공부하기</b><p>챕터를 열고 <b>🃏 플래시 카드</b>(가리고 외우기)로 훑어본 뒤, <b>✏️ 쓰기</b>로 직접 써서 채점해요.</p></div>
+  <div class="gstep"><span class="n">4</span><b>복습하기</b><p>틀린 문제는 <b>❗ 오답 복습</b>에 자동으로 모이고, <b>📊 학습 통계</b>에서 정답률을 볼 수 있어요.</p></div>
+  </div>
+  <p class="muted" style="margin:10px 0 0">💡 기록은 이 기기(브라우저)에 저장돼요. 다른 기기로 옮길 땐 ⚙️ 설정 → <b>전체 백업 받기</b> / <b>복원</b>을 쓰세요.</p>`}
+function guideCard(){
+  if(DB.settings.hideGuide&&DB.chapters.length)return `<div class="row end" style="margin:6px 0 -4px"><a href="#" class="muted" onclick="DB.settings.hideGuide=false;save();render();return false">❓ 사용법 보기</a></div>`;
+  return `<div class="card guide"><div class="row between"><h3>👋 동동이 암기장 사용법</h3>${DB.chapters.length?`<a href="#" class="muted" onclick="DB.settings.hideGuide=true;save();render();return false">접기 ✕</a>`:''}</div>
+  <div class="muted">외울 내용을 담아 두고, 가리고 외우고, 써 보며 채점하는 암기 프로그램이에요.</div>${guideSteps()}
+  ${DB.chapters.length?'':`<div class="row" style="margin-top:12px"><button class="btn pri" onclick="go('home',{tab:'lib'})">📚 기본 세트 보러 가기</button><button class="btn" onclick="newChapter()">+ 직접 만들기</button></div>`}</div>`;
+}
+function openGuide(){openModal(`<h3>👋 동동이 암기장 사용법</h3><div class="muted">외울 내용을 담아 두고, 가리고 외우고, 써 보며 채점하는 암기 프로그램이에요.</div>${guideSteps()}<div class="row end" style="margin-top:14px"><button class="btn pri" onclick="closeModal()">확인</button></div>`)}
 let mineEdit=false,mineSel=new Set();
 function homeMine(){
-  let h='';
+  let h=mineEdit?'':guideCard();
   if(mineEdit){
     h+=`<div class="editbar row between"><span><b>${mineSel.size}</b>개 선택</span><div class="row" style="gap:6px">
       <button class="btn" onclick="mineSelAll()">${mineSel.size===DB.chapters.length?'선택 해제':'전체 선택'}</button>
@@ -304,7 +326,7 @@ function homeMine(){
     <button class="btn" onclick="pickFile({target:'new'})">📥 파일에서 만들기 (엑셀·한글)</button>
     ${DB.chapters.length?`<button class="btn" onclick="mineEdit=true;mineSel.clear();render()">✏️ 목록 편집</button>`:''}
   </div>`;
-  if(!DB.chapters.length)return h+`<div class="card empty">아직 챕터가 없어요.<br><b>📚 기본 세트</b>에서 가져오거나, 새 챕터를 만들어 보세요.<br><br><button class="btn pri" onclick="go('home',{tab:'lib'})">기본 세트 보러 가기</button></div>`;
+  if(!DB.chapters.length)return h+`<div class="card empty">아직 담은 챕터가 없어요.</div>`;
   const groups={};DB.chapters.forEach(c=>{(groups[c.category||'기타']=groups[c.category||'기타']||[]).push(c)});
   Object.keys(groups).forEach(g=>{
     h+=`<div class="sec-title row between"><span>${esc(g)} <span class="muted">(${groups[g].length})</span></span>${mineEdit?`<a href="#" class="muted" onclick="mineSelCat('${esc(g)}');return false">이 분류 모두 선택</a>`:''}</div><div class="grid">`;
