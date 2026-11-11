@@ -73,6 +73,15 @@ textarea{resize:vertical;min-height:90px}
 .chap.sel{border-color:var(--pri);background:var(--pri-soft)}
 .chap .ck{position:absolute;top:12px;right:12px;width:20px;height:20px}
 .chap{position:relative}
+.items.hideans .red{background:#ffd9d9;color:transparent!important;border-radius:6px;border-bottom:2px solid var(--red)}
+.items.hideans .a{color:transparent!important;background:#eee;border-radius:6px;min-height:1.4em}
+.items.hideans .a .ex,.items.hideans .pron{visibility:hidden}
+.items.hideans.reveal .red{background:transparent;color:var(--red)!important}
+.items.hideans.reveal .a{color:var(--sub)!important;background:none}
+.items.hideans.reveal .a .ex,.items.hideans.reveal .pron{visibility:visible}
+.holdbtn{user-select:none;-webkit-user-select:none;touch-action:none}
+.items,.qbox,.flash{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+body.shield .items,body.shield .qbox,body.shield .flash,body.shield .modal{filter:blur(14px);transition:filter .05s}
 .guide{background:linear-gradient(135deg,#eef4ff,#fff7ec);border:1px solid #dfe6f5}
 .guide h3{margin:0 0 4px;font-size:17px}
 .gsteps{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:12px}
@@ -429,9 +438,14 @@ function makeChapter(name,category,items,src){
   DB.chapters.push(ch);save();return ch;
 }
 function normItems(items){return (items||[]).map(i=>{const o={id:uid(),type:i.type||(isCloze(i.q)?'cloze':'word'),q:String(i.q||'').trim(),a:String(i.a||'').trim(),ex:String(i.ex||'').trim(),c:0,w:0};if(i.p)o.p=String(i.p).trim();if(i.g)o.g=String(i.g).trim();return o}).filter(i=>i.q&&(i.type==='cloze'?isCloze(i.q):i.a))}
+// 정답 가리기: 관리자(로그인)가 아니면 목록의 정답을 가림. 누르고 있는 동안만 보임
+const maskOn=()=>!isLoggedIn();
+const maskCls=()=>maskOn()?' hideans':'';
+const holdBtn=()=>maskOn()?`<button class="btn sm holdbtn" onpointerdown="holdReveal(this,true)" onpointerup="holdReveal(this,false)" onpointerleave="holdReveal(this,false)" onpointercancel="holdReveal(this,false)" oncontextmenu="return false">👀 누르고 있으면 정답 보기</button>`:'';
+function holdReveal(btn,on){const box=btn.closest('.card,.modal')||document;box.querySelectorAll('.items.hideans').forEach(u=>u.classList.toggle('reveal',on))}
 function showPreview(title,items,onAdd,addLabel){
-  openModal(`<h3>${esc(title)}</h3><div class="muted">${items.length}개 항목</div>
-  <ul class="items" style="max-height:58vh;overflow:auto;margin-top:8px">${items.map(itemRowHTML).join('')}</ul>
+  openModal(`<h3>${esc(title)}</h3><div class="row between"><span class="muted">${items.length}개 항목</span>${holdBtn()}</div>
+  <ul class="items${maskCls()}" style="max-height:58vh;overflow:auto;margin-top:8px">${items.map(itemRowHTML).join('')}</ul>
   <div class="row end" style="margin-top:12px"><button class="btn" onclick="closeModal()">닫기</button>${onAdd?`<button class="btn pri" id="pvAdd">${addLabel||'+ 추가'}</button>`:''}</div>`);
   if(onAdd)$('#pvAdd').onclick=onAdd;
 }
@@ -518,8 +532,8 @@ function homeWrong(){
   if(!keys.length)return h+`<div class="card empty">오답이 없어요 👏</div>`;
   keys.forEach(k=>{const ch=getCh(k);const its=ch.items.filter(i=>DB.wrong[k].includes(i.id));
     h+=`<div class="card"><div class="row between"><div><b>${esc(ch.name)}</b> <span class="muted">${its.length}개</span></div>
-    <div class="row"><button class="btn sm pri" onclick="startWrong('${k}')">오답 복습</button><button class="btn sm" onclick="clearWrong('${k}')">비우기</button></div></div>
-    <ul class="items" style="margin-top:6px">${its.slice(0,6).map(itemRowHTML).join('')}</ul>${its.length>6?`<div class="muted">… 외 ${its.length-6}개</div>`:''}</div>`});
+    <div class="row">${holdBtn()}<button class="btn sm pri" onclick="startWrong('${k}')">오답 복습</button><button class="btn sm" onclick="clearWrong('${k}')">비우기</button></div></div>
+    <ul class="items${maskCls()}" style="margin-top:6px">${its.slice(0,6).map(itemRowHTML).join('')}</ul>${its.length>6?`<div class="muted">… 외 ${its.length-6}개</div>`:''}</div>`});
   h+=`<button class="btn" onclick="if(confirm('오답노트를 모두 비울까요?')){DB.wrong={};save();render()}">오답노트 전체 비우기</button>`;
   return h;
 }
@@ -600,9 +614,9 @@ function renderChapter(){
   h+=`</div>`;
   }
   // 목록
-  h+=`<div class="card"><div class="row between"><b>항목 목록 (${ch.items.length})${L?` <button class="btn sm adm" onclick="libBulkEdit()">📑 소단원 나누기·전체 편집</button>`:''}</b>${ch.items.length?`<input id="filt" placeholder="검색" class="inp" style="width:150px;padding:5px 10px" oninput="filterItems(this.value)">`:''}</div>`;
+  h+=`<div class="card"><div class="row between"><b>항목 목록 (${ch.items.length})${L?` <button class="btn sm adm" onclick="libBulkEdit()">📑 소단원 나누기·전체 편집</button>`:''}</b>${!L&&ch.items.length?holdBtn():''}${ch.items.length?`<input id="filt" placeholder="검색" class="inp" style="width:150px;padding:5px 10px" oninput="filterItems(this.value)">`:''}</div>`;
   if(!ch.items.length)h+=`<div class="empty">항목을 추가해 주세요</div>`;
-  else h+=`<ul class="items" id="itemList">${ch.items.map((i,n)=>`${(i.g||'')!==((ch.items[n-1]||{}).g||'')||(n===0&&i.g)?`<li class="ghead" style="background:#f3f0ff;border-radius:8px;padding:6px 10px;margin-top:6px;font-weight:700;color:var(--adm)">📑 ${esc(i.g||'(단원 없음)')}</li>`:''}<li data-s="${esc((i.q+' '+i.a+' '+(i.ex||'')).toLowerCase())}">
+  else h+=`<ul class="items${L?'':maskCls()}" id="itemList">${ch.items.map((i,n)=>`${(i.g||'')!==((ch.items[n-1]||{}).g||'')||(n===0&&i.g)?`<li class="ghead" style="background:#f3f0ff;border-radius:8px;padding:6px 10px;margin-top:6px;font-weight:700;color:var(--adm)">📑 ${esc(i.g||'(단원 없음)')}</li>`:''}<li data-s="${esc((i.q+' '+i.a+' '+(i.ex||'')).toLowerCase())}">
     <span class="muted" style="width:28px;text-align:right;margin-top:1px">${n+1}</span>
     <span class="typebadge ${i.type==='cloze'?'cloze':i.type==='pattern'?'pattern':''}">${TYPE_LABEL[i.type]||'단어'}</span>
     ${i.type==='cloze'?`<div class="q">${clozeHTML(i.q)}${i.ex?`<span class="ex">${esc(i.ex)}</span>`:''}</div>`:`<div class="q">${qHTML(i)}</div><div class="a">${esc(i.a)}${i.ex?`<span class="ex">${esc(i.ex)}</span>`:''}</div>`}
@@ -1106,7 +1120,7 @@ function renderResult(){
    <button class="btn pri" onclick="view={name:'chapter',id:'${S.chId}',range:S.range};startStudy('${S.chId}','${S.mode}')">다시 공부</button>
    ${wr.length?`<button class="btn bad" onclick="startStudy('${S.chId}','${S.mode}',S.wrongIds.slice(),true)">틀린 것만 다시</button>`:''}
    <button class="btn" onclick="go('home',{tab:'stats'})">통계 보기</button><button class="btn" onclick="go('chapter',{id:'${S.chId}',range:S.range})">목록으로</button></div></div>
-  ${wr.length?`<div class="card"><b>틀린 항목</b><ul class="items">${wr.map(itemRowHTML).join('')}</ul></div>`:''}`;
+  ${wr.length?`<div class="card"><div class="row between"><b>틀린 항목</b>${holdBtn()}</div><ul class="items${maskCls()}">${wr.map(itemRowHTML).join('')}</ul></div>`:''}`;
 }
 document.addEventListener('keydown',e=>{
   if(view.name!=='study'||!S||$('.modal-bg'))return;
@@ -1157,6 +1171,15 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
   DB._migrated=true;save();
 })();
 
+/* 캡처 방지 보조: 창이 포커스를 잃거나(캡처 도구 실행) PrintScreen을 누르면 화면을 흐리게 */
+(function(){
+  const on=()=>{if(maskOn())document.body.classList.add('shield')},off=()=>document.body.classList.remove('shield');
+  window.addEventListener('blur',on);window.addEventListener('focus',off);
+  document.addEventListener('visibilitychange',()=>document.hidden?on():off());
+  document.addEventListener('keyup',e=>{if(e.key==='PrintScreen'&&maskOn()){on();try{navigator.clipboard.writeText('동동이 암기장은 캡처할 수 없어요')}catch(_){}toast('캡처는 할 수 없어요 📵');setTimeout(off,1500)}});
+  document.addEventListener('contextmenu',e=>{if(maskOn()&&e.target.closest('.items,.qbox,.flash'))e.preventDefault()});
+  window.addEventListener('beforeprint',on);window.addEventListener('afterprint',off);
+})();
 render();
 loadRemoteLib();
 </script>
