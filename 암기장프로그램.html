@@ -76,6 +76,11 @@ textarea{resize:vertical;min-height:90px}
 .items.hideans .red{background:#ffd9d9;color:transparent!important;border-radius:6px;border-bottom:2px solid var(--red)}
 .items.hideans .a{color:transparent!important;background:#eee;border-radius:6px;min-height:1.4em}
 .items.hideans .a .ex,.items.hideans .pron{visibility:hidden}
+.items.hideans .red{cursor:pointer}
+.items.hideans .a{cursor:pointer}
+.items.hideans .red.peek{background:transparent;color:var(--red)!important}
+.items.hideans .a.peek{color:var(--sub)!important;background:none}
+.items.hideans .a.peek .ex{visibility:visible}
 .items.hideans.reveal .red{background:transparent;color:var(--red)!important}
 .items.hideans.reveal .a{color:var(--sub)!important;background:none}
 .items.hideans.reveal .a .ex,.items.hideans.reveal .pron{visibility:visible}
@@ -441,7 +446,7 @@ function normItems(items){return (items||[]).map(i=>{const o={id:uid(),type:i.ty
 // 정답 가리기: 관리자(로그인)가 아니면 목록의 정답을 가림. 누르고 있는 동안만 보임
 const maskOn=()=>!isLoggedIn();
 const maskCls=()=>maskOn()?' hideans':'';
-const holdBtn=()=>maskOn()?`<button class="btn sm holdbtn" onpointerdown="holdReveal(this,true)" onpointerup="holdReveal(this,false)" onpointerleave="holdReveal(this,false)" onpointercancel="holdReveal(this,false)" oncontextmenu="return false">👀 누르고 있으면 정답 보기</button>`:'';
+const holdBtn=()=>maskOn()?`<span class="muted" style="font-size:12px">빈칸을 누르면 2초 동안 정답이 보여요</span>`:'';
 function holdReveal(btn,on){const box=btn.closest('.card,.modal')||document;box.querySelectorAll('.items.hideans').forEach(u=>u.classList.toggle('reveal',on))}
 function showPreview(title,items,onAdd,addLabel){
   openModal(`<h3>${esc(title)}</h3><div class="row between"><span class="muted">${items.length}개 항목</span>${holdBtn()}</div>
@@ -1177,6 +1182,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
   window.addEventListener('blur',on);window.addEventListener('focus',off);
   document.addEventListener('visibilitychange',()=>document.hidden?on():off());
   document.addEventListener('keyup',e=>{if(e.key==='PrintScreen'&&maskOn()){on();try{navigator.clipboard.writeText('동동이 암기장은 캡처할 수 없어요')}catch(_){}toast('캡처는 할 수 없어요 📵');setTimeout(off,1500)}});
+  document.addEventListener('click',e=>{const t=e.target.closest('.items.hideans .red, .items.hideans .a');if(!t)return;e.stopPropagation();t.classList.add('peek');clearTimeout(t._pk);t._pk=setTimeout(()=>t.classList.remove('peek'),2000)},true);
   document.addEventListener('contextmenu',e=>{if(maskOn()&&e.target.closest('.items,.qbox,.flash'))e.preventDefault()});
   window.addEventListener('beforeprint',on);window.addEventListener('afterprint',off);
 })();
