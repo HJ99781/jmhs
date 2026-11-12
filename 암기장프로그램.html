@@ -1026,7 +1026,7 @@ function startWrong(chId){
 function renderStudy(){
   if(!S)return renderHome();
   const it=S.items[S.idx];const n=S.items.length;const done=S.correct+S.wrong;
-  const pct=done?Math.round(S.correct/done*100):0;
+  const pct=n?Math.round(S.correct/n*100):0;
   let h=`<div class="row between" style="margin-top:14px"><div class="row" style="gap:6px"><button class="btn sm" onclick="backFromStudy()">← 이전 메뉴</button>${S.mode==='flash'?'':`<button class="btn sm" onclick="endStudy()">■ 공부 종료</button>`}</div>
     <div class="stats3"><span>${S.idx+1} / ${n}</span>${S.mode==='flash'?'':`<span>성취도 <b>${pct}%</b></span>`}${S.mode==='flash'?'':`<span style="color:var(--ok)">○ ${S.correct}</span><span style="color:var(--bad)">✕ ${S.wrong}</span>`}</div></div>
     <div class="progress"><div style="width:${(S.mode==='flash'?S.idx+1:S.idx)/n*100}%"></div></div>
@@ -1116,11 +1116,11 @@ function renderResult(){
    <button class="btn pri" onclick="shuffle(S.items);S.idx=0;go('study')">섞어서 다시</button>
    <button class="btn ok" onclick="view={name:'chapter',id:'${id}',range:S.range};startStudy('${id}','q2a')">✏️ 쓰기로 확인하기</button>
    <button class="btn" onclick="go('chapter',{id:'${id}',range:S.range})">목록으로</button></div></div>`}
-  const t=S.correct+S.wrong;const pct=t?Math.round(S.correct/t*100):0;
+  const t=S.correct+S.wrong;const N=S.items.length;const pct=N?Math.round(S.correct/N*100):0;const acc=t?Math.round(S.correct/t*100):0;
   const ch=getCh(S.chId);const wr=ch.items.filter(i=>S.wrongIds.includes(i.id));
   return `<div class="card" style="text-align:center;margin-top:20px"><div class="muted">${esc(ch.name)} · ${MODE_LABEL[S.mode]}</div>
   <div class="result-num">${pct}%</div><div>${pct>=90?'🎉 아주 잘했어요!':pct>=70?'👍 좋아요!':'💪 조금만 더!'}</div>
-  <div class="stats3" style="justify-content:center;margin:10px 0"><span style="color:var(--ok)">정답 ${S.correct}</span><span style="color:var(--bad)">오답 ${S.wrong}</span></div>
+  <div class="muted">성취도 (전체 ${N}개 중 맞힌 비율)</div><div class="stats3" style="justify-content:center;margin:10px 0"><span style="color:var(--ok)">정답 ${S.correct}</span><span style="color:var(--bad)">오답 ${S.wrong}</span>${t<N?`<span class="muted">안 푼 문제 ${N-t}</span>`:''}<span class="muted">정답률 ${acc}%</span></div>
   <div class="row" style="justify-content:center;margin-top:14px">
    <button class="btn pri" onclick="view={name:'chapter',id:'${S.chId}',range:S.range};startStudy('${S.chId}','${S.mode}')">다시 공부</button>
    ${wr.length?`<button class="btn bad" onclick="startStudy('${S.chId}','${S.mode}',S.wrongIds.slice(),true)">틀린 것만 다시</button>`:''}
